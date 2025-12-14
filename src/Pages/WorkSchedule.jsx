@@ -126,14 +126,24 @@ function TaskCard({
   const canAutoComplete = daysLeft <= threshold;
   const isDisabled = !canAutoComplete && !allowEarlyMark;
 
-  const badgeClass =
-    status === "Overdue"
-      ? "bg-red-100 text-red-700"
-      : status === "Due Today"
-      ? "bg-yellow-100 text-yellow-700"
-      : status === "Upcoming"
-      ? "bg-orange-100 text-orange-700"
-      : "bg-gray-100 text-gray-700";
+  const statusConfig = {
+    Overdue: { color: "bg-red-500", text: "text-white" },
+    "Due Today": { color: "bg-yellow-500", text: "text-white" },
+    Upcoming: { color: "bg-orange-500", text: "text-white" },
+    Pending: { color: "bg-blue-500", text: "text-white" },
+    "No Date": { color: "bg-gray-500", text: "text-white" },
+  };
+
+  const priorityConfig = {
+    Critical: { color: "bg-red-100", text: "text-red-700" },
+    High: { color: "bg-orange-100", text: "text-orange-700" },
+    Medium: { color: "bg-yellow-100", text: "text-yellow-700" },
+    Low: { color: "bg-green-100", text: "text-green-700" },
+  };
+
+  const currentStatus = statusConfig[status] || statusConfig["Pending"];
+  const currentPriority =
+    priorityConfig[task.priority] || priorityConfig["Medium"];
 
   return (
     <motion.div
@@ -141,128 +151,188 @@ function TaskCard({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 6 }}
-      className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md flex flex-col"
+      className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
     >
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-800">
-              {task.taskName || task.name}
-            </h3>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full ml-2 font-medium ${badgeClass}`}
-            >
-              {status}
-            </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-              {task.priority || "Medium"}
-            </span>
-          </div>
-
-          <div className="mt-1 text-xs text-gray-500">
-            {daysLeft >= 0 ? `${daysLeft} day(s) left` : "Overdue"}
-            {task.activityType && ` • ${task.activityType}`}
-          </div>
-
-          <div className="mt-2 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-1">
-            <div>
-              <strong className="text-gray-700">Frequency:</strong>{" "}
-              <span className="text-gray-600">{task.category || "Weekly"}</span>
-            </div>
-            <div>
-              <strong className="text-gray-700">Machine:</strong>{" "}
-              <span className="text-gray-600">
-                {(machines && machines[task.machine]?.name) ||
-                  task.machine ||
-                  "—"}
-              </span>
-            </div>
-            <div>
-              <strong className="text-gray-700">Last Service:</strong>{" "}
-              <span className="text-gray-600">
-                {task.lastServiceDate
-                  ? formatDateLabel(task.lastServiceDate)
-                  : "—"}
-              </span>
-            </div>
-            <div>
-              <strong className="text-gray-700">Next Service:</strong>{" "}
-              <span className="text-gray-600">
-                {task.nextServiceDate
-                  ? formatDateLabel(task.nextServiceDate)
-                  : "—"}
-              </span>
-            </div>
-            {task.location && (
-              <div>
-                <strong className="text-gray-700">Location:</strong>{" "}
-                <span className="text-gray-600">{task.location}</span>
-              </div>
-            )}
-            {task.estimatedManHours && (
-              <div>
-                <strong className="text-gray-700">Est. Hours:</strong>{" "}
-                <span className="text-gray-600">{task.estimatedManHours}</span>
-              </div>
-            )}
-          </div>
-
-          {task.maintenanceChecklist && (
-            <details className="mt-3 text-xs text-gray-600">
-              <summary className="cursor-pointer">Checklist</summary>
-              <div className="mt-2 prose-sm max-w-none text-gray-700 whitespace-pre-line">
-                {task.maintenanceChecklist}
-              </div>
-            </details>
-          )}
-
-          {task.description && (
-            <details className="mt-3 text-xs text-gray-600">
-              <summary className="cursor-pointer">Instructions</summary>
-              <div className="mt-2 prose-sm max-w-none text-gray-700">
-                {task.description}
-              </div>
-            </details>
-          )}
-
-          {task.riskIfNotDone && (
-            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
-              <strong className="text-xs text-red-700">
-                Risk if not done:
-              </strong>
-              <p className="text-xs text-red-600 mt-1">{task.riskIfNotDone}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2 ml-4">
+      {/* Top section: Task name with action buttons */}
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-bold text-gray-900 pr-8 line-clamp-2">
+          {task.taskName || task.name}
+        </h3>
+        <div className="flex gap-1 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-1 rounded-md hover:bg-gray-100 cursor-pointer"
+            className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
+            title="Edit task"
           >
-            <Edit2 size={16} />
+            <Edit2 size={18} />
           </button>
           <button
             onClick={onDelete}
-            className="p-1 rounded-md hover:bg-gray-100 cursor-pointer"
+            className="p-2 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 cursor-pointer transition-colors"
+            title="Delete task"
           >
-            <Trash2 size={16} />
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
 
-      <div className="mt-4 flex justify-center">
+      {/* Status and Priority chips */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${currentStatus.color} ${currentStatus.text}`}
+        >
+          {status}
+        </span>
+        <span
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${currentPriority.color} ${currentPriority.text}`}
+        >
+          {task.priority || "Medium"}
+        </span>
+      </div>
+
+      {/* Key information grid */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <span>📅</span>
+            <span>Next Service</span>
+          </div>
+          <div className="text-sm font-medium text-gray-800">
+            {task.nextServiceDate ? formatDateLabel(task.nextServiceDate) : "—"}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <span>⏰</span>
+            <span>Days Left</span>
+          </div>
+          <div
+            className={`text-sm font-medium ${
+              daysLeft < 0
+                ? "text-red-600"
+                : daysLeft <= 3
+                ? "text-orange-600"
+                : "text-gray-800"
+            }`}
+          >
+            {daysLeft >= 0 ? `${daysLeft} day(s)` : "Overdue"}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <span>🔧</span>
+            <span>Machine</span>
+          </div>
+          <div className="text-sm font-medium text-gray-800 truncate">
+            {(machines && machines[task.machine]?.name) || task.machine || "—"}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <span>⏱️</span>
+            <span>Downtime?</span>
+          </div>
+          <div className="text-sm font-medium text-gray-800">
+            {task.downtimeRequired === "Yes - Major" ? (
+              <span className="text-red-600 font-semibold">Major</span>
+            ) : task.downtimeRequired === "Yes - Minor" ? (
+              <span className="text-orange-600">Minor</span>
+            ) : (
+              "No"
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Additional information - expandable */}
+      {(task.activityType || task.estimatedManHours || task.location) && (
+        <div className="mt-2 text-xs text-gray-600 space-y-1">
+          {task.activityType && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Type:</span>
+              <span className="text-gray-700">{task.activityType}</span>
+            </div>
+          )}
+          {task.estimatedManHours && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Est. Hours:</span>
+              <span className="text-gray-700">{task.estimatedManHours}</span>
+            </div>
+          )}
+          {task.location && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Location:</span>
+              <span className="text-gray-700 truncate">{task.location}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Expandable details section */}
+      {(task.maintenanceChecklist ||
+        task.riskIfNotDone ||
+        task.description) && (
+        <details className="mt-4 group">
+          <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2">
+            <span className="transition-transform group-open:rotate-90">▶</span>
+            <span>View Details</span>
+          </summary>
+
+          <div className="mt-3 space-y-3 pt-3 border-t border-gray-100">
+            {task.maintenanceChecklist && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-700 mb-1">
+                  Checklist:
+                </h4>
+                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg whitespace-pre-line">
+                  {task.maintenanceChecklist}
+                </div>
+              </div>
+            )}
+
+            {task.riskIfNotDone && (
+              <div>
+                <h4 className="text-xs font-semibold text-red-700 mb-1">
+                  ⚠️ Risk if not done:
+                </h4>
+                <div className="text-xs text-red-600 bg-red-50 p-3 rounded-lg">
+                  {task.riskIfNotDone}
+                </div>
+              </div>
+            )}
+
+            {task.description && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-700 mb-1">
+                  Instructions:
+                </h4>
+                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg">
+                  {task.description}
+                </div>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+
+      {/* Complete button - at the bottom */}
+      <div className="mt-6 pt-4 border-t border-gray-100">
         <button
           onClick={onComplete}
           disabled={isDisabled}
-          className={`w-full md:w-2/3 text-center px-4 py-2 rounded-xl flex items-center justify-center gap-2 font-medium transition ${
+          className={`w-full text-center px-4 py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${
             !isDisabled
-              ? "bg-green-600 text-white hover:bg-green-700 cursor-pointer"
-              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-sm hover:shadow cursor-pointer"
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}
         >
-          <CalendarCheck size={16} />
-          {isDisabled ? "Pending" : "Mark as Complete"}
+          <CalendarCheck size={18} />
+          <span className="font-semibold">
+            {isDisabled ? "Task Pending" : "Mark as Complete"}
+          </span>
         </button>
       </div>
     </motion.div>
@@ -479,7 +549,7 @@ export default function MaintenanceSchedule() {
         {CATEGORIES.map((cat) => (
           <section key={cat} className="mb-8">
             <SectionHeader title={`${cat} Maintenance`} />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
               {grouped[cat] && grouped[cat].length > 0 ? (
                 grouped[cat].map((t) => (
                   <TaskCard
@@ -494,7 +564,7 @@ export default function MaintenanceSchedule() {
                 ))
               ) : (
                 <div className="col-span-full">
-                  <div className="bg-white border border-dashed border-gray-200 rounded-xl p-6 text-center text-gray-500">
+                  <div className="bg-white border border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-500">
                     No {cat.toLowerCase()} tasks yet — add one with the button
                     below.
                   </div>
