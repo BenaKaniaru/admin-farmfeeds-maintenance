@@ -13,6 +13,11 @@ import {
   AlertTriangle,
   Calendar,
 } from "lucide-react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+
 
 /* -------------------------
    Constants & Date Helpers
@@ -95,6 +100,23 @@ function computeStatus(task) {
   return "Pending";
 }
 
+function mapTasksToEvents(tasks, machine, category) {
+  return Object.entries(tasks)
+    .filter(([_, t]) => t.nextServiceDate)
+    .filter(([_, t]) => (machine ? t.machine === machine : true))
+    .filter(([_, t]) =>
+      category ? (t.category || "Weekly") === category : true
+    )
+    .map(([key, t]) => ({
+      id: key,
+      title: t.taskName || t.name || "Maintenance Task",
+      start: t.nextServiceDate,
+      allDay: true,
+      extendedProps: t,
+    }));
+}
+
+
 /* -------------------------
    Small UI Pieces
 ------------------------- */
@@ -123,27 +145,16 @@ function TaskCard({
   const next = task.nextServiceDate || null;
   const daysLeft = next ? daysUntil(next) : Infinity;
   const threshold = THRESHOLDS[task.category || "Weekly"] ?? 2;
-  const canAutoComplete = daysLeft <= threshold;
-  const isDisabled = !canAutoComplete && !allowEarlyMark;
+  const isDisabled = !allowEarlyMark && daysLeft > threshold;
 
-  const statusConfig = {
-    Overdue: { color: "bg-red-500", text: "text-white" },
-    "Due Today": { color: "bg-yellow-500", text: "text-white" },
-    Upcoming: { color: "bg-orange-500", text: "text-white" },
-    Pending: { color: "bg-blue-500", text: "text-white" },
-    "No Date": { color: "bg-gray-500", text: "text-white" },
-  };
-
-  const priorityConfig = {
-    Critical: { color: "bg-red-100", text: "text-red-700" },
-    High: { color: "bg-orange-100", text: "text-orange-700" },
-    Medium: { color: "bg-yellow-100", text: "text-yellow-700" },
-    Low: { color: "bg-green-100", text: "text-green-700" },
-  };
-
-  const currentStatus = statusConfig[status] || statusConfig["Pending"];
-  const currentPriority =
-    priorityConfig[task.priority] || priorityConfig["Medium"];
+  const badgeClass =
+    status === "Overdue"
+      ? "bg-red-100 text-red-700"
+      : status === "Due Today"
+      ? "bg-yellow-100 text-yellow-700"
+      : status === "Upcoming"
+      ? "bg-orange-100 text-orange-700"
+      : "bg-gray-100 text-gray-700";
 
   return (
     <motion.div
@@ -151,193 +162,142 @@ function TaskCard({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 6 }}
-      className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
+      className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-lg flex flex-col transition"
     >
-      {/* Top section: Task name with action buttons */}
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-bold text-gray-900 pr-8 line-clamp-2">
-          {task.taskName || task.name}
-        </h3>
-        <div className="flex gap-1 flex-shrink-0">
+      {/* Header: Name + Status + Priority */}
+      <div className="flex justify-between items-start gap-3 mb-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold text-gray-800">
+              {task.taskName || task.name}
+            </h3>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeClass}`}
+            >
+              {status}
+            </span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+              {task.priority || "Medium"}
+            </span>
+          </div>
+
+          <div className="mt-1 text-xs text-gray-500">
+            {daysLeft >= 0 ? `${daysLeft} day(s) left` : "Overdue"}
+            {task.activityType && ` • ${task.activityType}`}
+          </div>
+        </div>
+
+        {/* Edit/Delete Buttons */}
+        <div className="flex flex-col gap-2 ml-2">
           <button
             onClick={onEdit}
-            className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
-            title="Edit task"
+            className="p-1 rounded-md hover:bg-gray-100 transition"
           >
-            <Edit2 size={18} />
+            <Edit2 size={16} />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 cursor-pointer transition-colors"
-            title="Delete task"
+            className="p-1 rounded-md hover:bg-gray-100 transition"
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
 
-      {/* Status and Priority chips */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${currentStatus.color} ${currentStatus.text}`}
-        >
-          {status}
-        </span>
-        <span
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${currentPriority.color} ${currentPriority.text}`}
-        >
-          {task.priority || "Medium"}
-        </span>
-      </div>
-
-      {/* Key information grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>📅</span>
-            <span>Next Service</span>
-          </div>
-          <div className="text-sm font-medium text-gray-800">
-            {task.nextServiceDate ? formatDateLabel(task.nextServiceDate) : "—"}
-          </div>
+      {/* Info Grid */}
+      <div className="mt-2 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <strong className="text-gray-700">Machine:</strong>{" "}
+          <span className="text-gray-600">
+            {(machines && machines[task.machine]?.name) || task.machine || "—"}
+          </span>
         </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>⏰</span>
-            <span>Days Left</span>
-          </div>
-          <div
-            className={`text-sm font-medium ${
-              daysLeft < 0
+        <div>
+          <strong className="text-gray-700">Downtime Required:</strong>{" "}
+          <span
+            className={`font-medium ${
+              task.downtimeRequired === "Yes - Major"
                 ? "text-red-600"
-                : daysLeft <= 3
+                : task.downtimeRequired === "Yes - Minor"
                 ? "text-orange-600"
                 : "text-gray-800"
             }`}
           >
-            {daysLeft >= 0 ? `${daysLeft} day(s)` : "Overdue"}
-          </div>
+            {task.downtimeRequired || "No"}
+          </span>
         </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>🔧</span>
-            <span>Machine</span>
-          </div>
-          <div className="text-sm font-medium text-gray-800 truncate">
-            {(machines && machines[task.machine]?.name) || task.machine || "—"}
-          </div>
+        <div>
+          <strong className="text-gray-700">Last Service:</strong>{" "}
+          <span className="text-gray-600">
+            {task.lastServiceDate ? formatDateLabel(task.lastServiceDate) : "—"}
+          </span>
         </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>⏱️</span>
-            <span>Downtime?</span>
-          </div>
-          <div className="text-sm font-medium text-gray-800">
-            {task.downtimeRequired === "Yes - Major" ? (
-              <span className="text-red-600 font-semibold">Major</span>
-            ) : task.downtimeRequired === "Yes - Minor" ? (
-              <span className="text-orange-600">Minor</span>
-            ) : (
-              "No"
-            )}
-          </div>
+        <div>
+          <strong className="text-gray-700">Next Service:</strong>{" "}
+          <span className="text-gray-600">
+            {task.nextServiceDate ? formatDateLabel(task.nextServiceDate) : "—"}
+          </span>
         </div>
+        {task.location && (
+          <div>
+            <strong className="text-gray-700">Location:</strong>{" "}
+            <span className="text-gray-600">{task.location}</span>
+          </div>
+        )}
+        {task.estimatedManHours && (
+          <div>
+            <strong className="text-gray-700">Est. Hours:</strong>{" "}
+            <span className="text-gray-600">{task.estimatedManHours}</span>
+          </div>
+        )}
       </div>
 
-      {/* Additional information - expandable */}
-      {(task.activityType || task.estimatedManHours || task.location) && (
-        <div className="mt-2 text-xs text-gray-600 space-y-1">
-          {task.activityType && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Type:</span>
-              <span className="text-gray-700">{task.activityType}</span>
-            </div>
-          )}
-          {task.estimatedManHours && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Est. Hours:</span>
-              <span className="text-gray-700">{task.estimatedManHours}</span>
-            </div>
-          )}
-          {task.location && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Location:</span>
-              <span className="text-gray-700 truncate">{task.location}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Expandable details section */}
-      {(task.maintenanceChecklist ||
-        task.riskIfNotDone ||
-        task.description) && (
-        <details className="mt-4 group">
-          <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2">
-            <span className="transition-transform group-open:rotate-90">▶</span>
-            <span>View Details</span>
-          </summary>
-
-          <div className="mt-3 space-y-3 pt-3 border-t border-gray-100">
-            {task.maintenanceChecklist && (
-              <div>
-                <h4 className="text-xs font-semibold text-gray-700 mb-1">
-                  Checklist:
-                </h4>
-                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg whitespace-pre-line">
-                  {task.maintenanceChecklist}
-                </div>
-              </div>
-            )}
-
-            {task.riskIfNotDone && (
-              <div>
-                <h4 className="text-xs font-semibold text-red-700 mb-1">
-                  ⚠️ Risk if not done:
-                </h4>
-                <div className="text-xs text-red-600 bg-red-50 p-3 rounded-lg">
-                  {task.riskIfNotDone}
-                </div>
-              </div>
-            )}
-
-            {task.description && (
-              <div>
-                <h4 className="text-xs font-semibold text-gray-700 mb-1">
-                  Instructions:
-                </h4>
-                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg">
-                  {task.description}
-                </div>
-              </div>
-            )}
+      {/* Checklists & Instructions */}
+      {task.maintenanceChecklist && (
+        <details className="mt-3 text-xs text-gray-600">
+          <summary className="cursor-pointer font-medium">Checklist</summary>
+          <div className="mt-2 prose-sm max-w-none text-gray-700 whitespace-pre-line">
+            {task.maintenanceChecklist}
           </div>
         </details>
       )}
 
-      {/* Complete button - at the bottom */}
-      <div className="mt-6 pt-4 border-t border-gray-100">
+      {task.description && (
+        <details className="mt-3 text-xs text-gray-600">
+          <summary className="cursor-pointer font-medium">Instructions</summary>
+          <div className="mt-2 prose-sm max-w-none text-gray-700">
+            {task.description}
+          </div>
+        </details>
+      )}
+
+      {task.riskIfNotDone && (
+        <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+          <strong className="text-xs text-red-700">Risk if not done:</strong>
+          <p className="text-xs text-red-600 mt-1">{task.riskIfNotDone}</p>
+        </div>
+      )}
+
+      {/* Complete Button */}
+      <div className="mt-4 flex justify-center">
         <button
           onClick={onComplete}
           disabled={isDisabled}
-          className={`w-full text-center px-4 py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${
+          className={`w-full md:w-2/3 px-4 py-2 rounded-xl flex items-center justify-center gap-2 font-medium transition ${
             !isDisabled
-              ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-sm hover:shadow cursor-pointer"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              ? "bg-green-600 text-white hover:bg-green-700 cursor-pointer"
+              : "bg-gray-200 text-gray-500 cursor-not-allowed"
           }`}
         >
-          <CalendarCheck size={18} />
-          <span className="font-semibold">
-            {isDisabled ? "Task Pending" : "Mark as Complete"}
-          </span>
+          <CalendarCheck size={16} />
+          {isDisabled ? "Completed" : "Mark as Complete"}
         </button>
       </div>
     </motion.div>
   );
 }
+
+
 
 /* -------------------------
    Main Component
@@ -357,6 +317,9 @@ export default function MaintenanceSchedule() {
   });
   const [categoryCounts, setCategoryCounts] = useState({});
   const [calendarView, setCalendarView] = useState(false);
+  const [calendarMachine, setCalendarMachine] = useState("");
+  const [calendarCategory, setCalendarCategory] = useState("");
+
 
   useEffect(() => {
     const tasksRef = ref(db, "maintenanceSchedule");
@@ -426,24 +389,35 @@ export default function MaintenanceSchedule() {
   }
 
   async function handleCompleteClick(task) {
-    const key = task?.key;
-    if (!key) return;
-    const next = task.nextServiceDate || null;
-    const diff = next ? daysUntil(next) : Infinity;
-    const threshold = THRESHOLDS[task.category || "Weekly"] ?? 2;
-    const canAuto = diff <= threshold;
+    // Use stored nextServiceDate if available
+    const next =
+      task.nextServiceDate ||
+      computeNextFrom(task.lastServiceDate || todayISO(), task.category);
 
-    if (canAuto) return await doComplete(key, task);
-    const msg = `This task is not yet due. Next service is in ${diff} day(s). Are you sure you want to mark as COMPLETED?`;
-    setConfirmEarly({ open: true, taskKey: key, message: msg });
+    // Days left from today to nextServiceDate
+    const daysLeft = daysUntil(next);
+
+    if (daysLeft > 0) {
+      // Task is early → ask for confirmation
+      setConfirmEarly({
+        open: true,
+        taskKey: task.key,
+        message: `Task is not yet due. Next service is in ${daysLeft} day(s). Are you sure you want to mark as COMPLETED?`,
+      });
+    } else {
+      // Task is due or overdue → complete directly
+      await doComplete(task.key, task);
+    }
   }
 
+
+
   async function doComplete(key, task) {
-    const last = todayISO();
-    const next = computeNextFrom(last, task.category || "Weekly");
+    const today = todayISO();
+    const next = computeNextFrom(today, task.category || "Weekly");
     try {
       await update(ref(db, `maintenanceSchedule/${key}`), {
-        lastServiceDate: last,
+        lastServiceDate: today,
         nextServiceDate: next,
       });
       setConfirmEarly({ open: false, taskKey: null, message: "" });
@@ -452,6 +426,7 @@ export default function MaintenanceSchedule() {
       alert("Failed to mark complete.");
     }
   }
+
 
   /* -------------------------
      Add / Edit helpers
@@ -494,32 +469,93 @@ export default function MaintenanceSchedule() {
   if (calendarView) {
     return (
       <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
-        <div className="max-w-7xl mx-auto flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-800">Calendar View</h1>
-          <button
-            onClick={() => setCalendarView(false)}
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 cursor-pointer flex items-center gap-2"
-          >
-            <Calendar size={16} /> Back
-          </button>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm min-h-[300px]">
-          <p className="text-gray-500">
-            Calendar integration placeholder — implement your calendar here
-            (e.g., FullCalendar or custom)
-          </p>
-          <ul className="mt-3 text-sm">
-            {flat.map((t) => (
-              <li key={t.key}>
-                {t.taskName || t.name} — {t.nextServiceDate || "No date"} (
-                {t.category})
-              </li>
-            ))}
-          </ul>
+        <div className="max-w-7xl mx-auto bg-white rounded-xl p-4 shadow-sm">
+          {/* Calendar Filters */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            <select
+              value={calendarMachine}
+              onChange={(e) => setCalendarMachine(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            >
+              <option value="">All Machines</option>
+              {Object.entries(machines).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v.name || v.code || k}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={calendarCategory}
+              onChange={(e) => setCalendarCategory(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            >
+              <option value="">All Frequencies</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => setCalendarView(false)}
+              className="ml-auto px-3 py-2 text-sm rounded bg-gray-100 hover:bg-gray-200"
+            >
+              Back to List
+            </button>
+          </div>
+
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            editable
+            height="auto"
+            /* 📱 Mobile optimization */
+            aspectRatio={window.innerWidth < 640 ? 0.9 : 1.6}
+            headerToolbar={{
+              left: "prev,next",
+              center: "title",
+              right:
+                window.innerWidth < 640
+                  ? "dayGridMonth"
+                  : "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
+            events={mapTasksToEvents(tasks, calendarMachine, calendarCategory)}
+            /* ✏️ Click → edit */
+            eventClick={(info) => {
+              openEditTask(info.event.id);
+            }}
+            /* 📆 Drag & drop → Firebase */
+            eventDrop={async (info) => {
+              try {
+                await update(ref(db, `maintenanceSchedule/${info.event.id}`), {
+                  nextServiceDate: info.event.startStr,
+                });
+              } catch {
+                info.revert();
+                alert("Failed to reschedule task");
+              }
+            }}
+            /* 🔔 Overdue + priority coloring */
+            eventClassNames={(arg) => {
+              const { priority, nextServiceDate } = arg.event.extendedProps;
+              const diff = daysUntil(nextServiceDate);
+
+              if (diff < 0) return ["bg-red-700", "text-white"];
+              if (diff === 0) return ["bg-yellow-600", "text-white"];
+
+              if (priority === "Critical") return ["bg-red-500"];
+              if (priority === "High") return ["bg-orange-500"];
+              if (priority === "Medium") return ["bg-yellow-500"];
+              return ["bg-green-600"];
+            }}
+          />
         </div>
       </div>
     );
   }
+
 
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
@@ -708,25 +744,21 @@ export default function MaintenanceSchedule() {
                   </div>
 
                   {/* Machine */}
+
                   <div className="flex flex-col">
                     <label className="text-xs text-gray-600 mb-1">
                       Machine
                     </label>
-                    <select
+                    <input
                       value={form.machine}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, machine: e.target.value }))
                       }
-                      className="border rounded px-3 py-2 cursor-pointer"
-                    >
-                      <option value="">— Select machine —</option>
-                      {Object.entries(machines).map(([mk, mv]) => (
-                        <option key={mk} value={mk}>
-                          {mv.name || mv.code || mk}
-                        </option>
-                      ))}
-                    </select>
+                      className="border rounded px-3 py-2 cursor-text"
+                      placeholder="e.g., Production Line 1"
+                    />
                   </div>
+
 
                   {/* Location */}
                   <div className="flex flex-col">

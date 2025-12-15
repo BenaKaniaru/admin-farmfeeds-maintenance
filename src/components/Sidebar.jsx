@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { FaCog } from "react-icons/fa";
 import {
   MdDashboard,
   MdBuild,
@@ -33,7 +34,7 @@ function Sidebar() {
   const toggleSidebar = () => setCollapsed(!collapsed);
 
   const menu = [
-    { label: "Work Orders", path: "/workorders", icon: <MdBuild size={20} /> },
+    { label: "Maintenance History", path: "/maintenancehistory", icon: <MdBuild size={20} /> },
     {
       label: "Machine Inventory",
       path: "/machineinventory",
@@ -44,6 +45,12 @@ function Sidebar() {
       path: "/workschedule",
       icon: <MdSchedule size={20} />,
     },
+
+    {
+      label: "Spare Parts Inventory",
+      path: "/spareparts",
+      icon: <FaCog size= {20} />,
+    }
   ];
 
   const handleMouseEnter = (index) => collapsed && setTooltipVisible(index);

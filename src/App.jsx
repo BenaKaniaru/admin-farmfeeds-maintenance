@@ -6,9 +6,10 @@ import {
 } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import WorkOrders from "./Pages/WorkOrders";
+import MaintenanceHistory from "./Pages/MaintenanceHistory";
 import MachineInventory from "./Pages/MachineInventory";
 import WorkSchedule from "./Pages/WorkSchedule";
+import SparePartsInventory from "./Pages/SparePartsInventory";
 
 function App() {
   return (
@@ -25,10 +26,11 @@ function App() {
           {/* Scrollable Page Content */}
           <main className="flex-1 mt-16 p-6 overflow-y-auto">
             <Routes>
-              <Route path="/" element={<Navigate to="/workorders" replace />} />
-              <Route path="/workorders" element={<WorkOrders />} />
+              <Route path="/" element={<Navigate to="/maintenancehistory" replace />} />
+              <Route path="/maintenancehistory" element={<MaintenanceHistory />} />
               <Route path="/machineinventory" element={<MachineInventory />} />
               <Route path="/workschedule" element={<WorkSchedule />} />
+              <Route path="/spareparts" element={<SparePartsInventory/>} />
             </Routes>
           </main>
         </div>
