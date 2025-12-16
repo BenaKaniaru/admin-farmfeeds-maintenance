@@ -28,6 +28,7 @@ const ACTIVITY_TYPES = ["Preventive", "Corrective", "Predictive", "Breakdown"];
 const DOWNTIME_OPTIONS = ["No", "Yes - Minor", "Yes - Major"];
 const THRESHOLDS = { Weekly: 2, Monthly: 7, "Half-Year": 30, Yearly: 30 };
 
+
 function todayISO() {
   const d = new Date();
   return d.toISOString().split("T")[0];
@@ -205,7 +206,9 @@ function TaskCard({
       </div>
 
       {/* Info Grid */}
-      <div className="mt-2 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div
+        className="mt-2 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-2 wrap-break-word"
+      >
         <div>
           <strong className="text-gray-700">Machine:</strong>{" "}
           <span className="text-gray-600">
@@ -319,6 +322,13 @@ export default function MaintenanceSchedule() {
   const [calendarView, setCalendarView] = useState(false);
   const [calendarMachine, setCalendarMachine] = useState("");
   const [calendarCategory, setCalendarCategory] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
 
   useEffect(() => {
@@ -505,52 +515,50 @@ export default function MaintenanceSchedule() {
               Back to List
             </button>
           </div>
-
-          <FullCalendar
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            editable
-            height="auto"
-            /* 📱 Mobile optimization */
-            aspectRatio={window.innerWidth < 640 ? 0.9 : 1.6}
-            headerToolbar={{
-              left: "prev,next",
-              center: "title",
-              right:
-                window.innerWidth < 640
+          <div className="overflow-x-auto">
+            <FullCalendar
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              editable
+              height={isMobile ? "auto" : 650} // auto height on mobile
+              aspectRatio={isMobile ? 0.85 : 1.6} // compact on small screens
+              contentHeight="auto"
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: isMobile
                   ? "dayGridMonth"
                   : "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            events={mapTasksToEvents(tasks, calendarMachine, calendarCategory)}
-            /* ✏️ Click → edit */
-            eventClick={(info) => {
-              openEditTask(info.event.id);
-            }}
-            /* 📆 Drag & drop → Firebase */
-            eventDrop={async (info) => {
-              try {
-                await update(ref(db, `maintenanceSchedule/${info.event.id}`), {
-                  nextServiceDate: info.event.startStr,
-                });
-              } catch {
-                info.revert();
-                alert("Failed to reschedule task");
-              }
-            }}
-            /* 🔔 Overdue + priority coloring */
-            eventClassNames={(arg) => {
-              const { priority, nextServiceDate } = arg.event.extendedProps;
-              const diff = daysUntil(nextServiceDate);
+              }}
+              events={mapTasksToEvents(tasks, calendarMachine, calendarCategory)}
+              eventClick={(info) => openEditTask(info.event.id)}
+              eventDrop={async (info) => {
+                try {
+                  await update(ref(db, `maintenanceSchedule/${info.event.id}`), {
+                    nextServiceDate: info.event.startStr,
+                  });
+                } catch {
+                  info.revert();
+                  alert("Failed to reschedule task");
+                }
+              }}
+              eventClassNames={(arg) => {
+                const { priority, nextServiceDate } = arg.event.extendedProps;
+                const diff = daysUntil(nextServiceDate);
 
-              if (diff < 0) return ["bg-red-700", "text-white"];
-              if (diff === 0) return ["bg-yellow-600", "text-white"];
+                if (diff < 0) return ["bg-red-700", "text-white"];
+                if (diff === 0) return ["bg-yellow-600", "text-white"];
 
-              if (priority === "Critical") return ["bg-red-500"];
-              if (priority === "High") return ["bg-orange-500"];
-              if (priority === "Medium") return ["bg-yellow-500"];
-              return ["bg-green-600"];
-            }}
-          />
+                if (priority === "Critical") return ["bg-red-500"];
+                if (priority === "High") return ["bg-orange-500"];
+                if (priority === "Medium") return ["bg-yellow-500"];
+                return ["bg-green-600"];
+              }}
+              dayMaxEvents={isMobile ? 3 : undefined} // limit number of events displayed per day on mobile
+              navLinks={!isMobile} // allow clicking week/day links only on desktop
+              windowResize={(view) => setIsMobile(window.innerWidth < 640)}
+            />
+          </div>
         </div>
       </div>
     );
@@ -560,7 +568,7 @@ export default function MaintenanceSchedule() {
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
           <h1 className="text-2xl font-bold text-gray-800">
             Maintenance Schedule
           </h1>
@@ -755,10 +763,9 @@ export default function MaintenanceSchedule() {
                         setForm((f) => ({ ...f, machine: e.target.value }))
                       }
                       className="border rounded px-3 py-2 cursor-text"
-                      placeholder="e.g., Production Line 1"
+                      placeholder="e.g., Hammer Mill"
                     />
                   </div>
-
 
                   {/* Location */}
                   <div className="flex flex-col">
@@ -771,7 +778,7 @@ export default function MaintenanceSchedule() {
                         setForm((f) => ({ ...f, location: e.target.value }))
                       }
                       className="border rounded px-3 py-2 cursor-text"
-                      placeholder="e.g., Production Line 1"
+                      placeholder="e.g., 0 meter"
                     />
                   </div>
 
@@ -789,10 +796,8 @@ export default function MaintenanceSchedule() {
                         }))
                       }
                       className="border rounded px-3 py-2 cursor-text"
-                      placeholder="e.g., 2.5"
-                      type="number"
-                      step="0.5"
-                      min="0"
+                      placeholder="e.g., 1 hour, 30 minutes..."
+                      type="text"
                     />
                   </div>
 

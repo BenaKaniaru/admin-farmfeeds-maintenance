@@ -157,8 +157,8 @@ function MaintenanceHistory() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 text-gray-800">
         Maintenance History
       </h2>
 
@@ -169,12 +169,12 @@ function MaintenanceHistory() {
           placeholder="Search machine, title, location..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="border p-2 rounded w-full md:flex-1"
+          className="border px-3 py-2 rounded w-full text-sm sm:text-base"
         />
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value)}
-          className="border p-2 rounded w-full md:w-auto"
+          className="border px-3 py-2 rounded w-full sm:w-auto text-sm sm:text-base"
         >
           <option value="latest">Latest First</option>
           <option value="oldest">Oldest First</option>
@@ -187,7 +187,9 @@ function MaintenanceHistory() {
           resetForm();
           setShowModal(true);
         }}
-        className="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg text-3xl z-20 hover:bg-blue-700"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 
+           bg-blue-600 text-white w-12 h-12 sm:w-14 sm:h-14 
+           rounded-full shadow-lg text-2xl sm:text-3xl z-20"
       >
         +
       </button>
@@ -218,14 +220,14 @@ function MaintenanceHistory() {
                 {/* Minimal Info */}
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-800">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800">
                       {wo.title}
                     </h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-xs sm:text-sm text-gray-600">
                       {wo.machine} | {wo.location}
                     </p>
                     {!isExpanded && (
-                      <p className="text-xs text-blue-400 mt-1 italic">
+                      <p className="text-[11px] sm:text-xs text-blue-400 mt-1 italic">
                         Click for more details
                       </p>
                     )}
@@ -243,11 +245,11 @@ function MaintenanceHistory() {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="mt-4 text-sm text-gray-700 overflow-hidden"
+                      className="mt-4 text-xs sm:text-sm text-gray-700 leading-relaxed"
                     >
                       <p className="mb-2">{wo.description}</p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {Object.entries(wo)
                           .filter(
                             ([key, value]) =>
@@ -255,7 +257,7 @@ function MaintenanceHistory() {
                           )
                           .map(([key, value]) => (
                             <div key={key}>
-                              <h4 className="font-semibold">
+                              <h4 className="font-semibold text-xs sm:text-sm">
                                 {formatLabel(key)}
                               </h4>
                               {Array.isArray(value) ? (
@@ -265,7 +267,7 @@ function MaintenanceHistory() {
                                   ))}
                                 </ul>
                               ) : (
-                                <p className="border rounded p-2">
+                                <p className="border rounded p-2 text-xs sm:text-sm">
                                   {key.toLowerCase().includes("date")
                                     ? formatDate(value)
                                     : value}
@@ -283,7 +285,7 @@ function MaintenanceHistory() {
                             setEditingOrder(wo);
                             setShowModal(true);
                           }}
-                          className="px-4 py-1 bg-yellow-500 text-white rounded"
+                          className="px-4 py-2 text-xs sm:text-sm bg-blue-500 hover:bg-blue-300 cursor-pointer text-white rounded"
                         >
                           Edit
                         </button>
@@ -292,7 +294,7 @@ function MaintenanceHistory() {
                             e.stopPropagation();
                             setDeleteTarget(wo);
                           }}
-                          className="px-4 py-1 bg-red-600 text-white rounded"
+                          className="px-4 py-2 text-xs sm:text-sm bg-red-500 hover:bg-red-300 text-white cursor-pointer rounded"
                         >
                           Delete
                         </button>
@@ -339,7 +341,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, title: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -352,7 +354,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, machine: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -365,7 +367,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, location: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                     placeholder="e.g 0 meter, 6 meter..."
                   />
                 </div>
@@ -380,7 +382,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, activityType: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   >
                     <option value="">Select type...</option>
                     {activityOptions.map((type) => (
@@ -400,7 +402,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, startedOn: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -415,7 +417,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, completionDate: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -428,7 +430,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, projectLead: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -448,7 +450,7 @@ function MaintenanceHistory() {
                       setForm({ ...form, assignedPersonnel: e.target.value })
                     }
                     placeholder="For two or more, separate with commas"
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -468,7 +470,7 @@ function MaintenanceHistory() {
                       setForm({ ...form, partsUsed: e.target.value })
                     }
                     placeholder="For two or more, separate with commas"
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -483,7 +485,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, laborHours: e.target.value })
                     }
-                    className="border p-2 rounded w-full"
+                    className="border px-3 py-2 rounded w-full text-sm sm:text-base"
                   />
                 </div>
 
@@ -497,7 +499,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, observations: e.target.value })
                     }
-                    className="border p-2 rounded w-full min-h-[80px]"
+                    className="border px-3 py-2 rounded w-full min-h-80px] text-sm sm:text-base"
                   />
                 </div>
 
@@ -509,7 +511,7 @@ function MaintenanceHistory() {
                     onChange={(e) =>
                       setForm({ ...form, description: e.target.value })
                     }
-                    className="border p-2 rounded w-full min-h-[80px]"
+                    className="border px-3 py-2 rounded w-full min-h-80px] text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -538,19 +540,19 @@ function MaintenanceHistory() {
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg text-center">
-            <p className="mb-4">
+            <p className="mb-4 text-sm sm:text-base">
               Delete record <strong>{deleteTarget.title}</strong>?
             </p>
             <div className="flex gap-4 justify-center">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 bg-gray-300 rounded"
+                className="px-4 py-2 text-sm bg-gray-300 rounded"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded"
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded"
               >
                 Delete
               </button>

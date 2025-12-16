@@ -67,7 +67,7 @@ function Sidebar() {
       className={`
         bg-gray-900 text-white flex flex-col transition-all duration-300
         fixed left-0 z-40 top-16 h-[calc(100vh-64px)]
-        ${collapsed ? "w-24" : "w-64"}
+        ${collapsed ? "w-19" : "w-64"}
       `}
     >
       {/* Header */}
@@ -137,7 +137,7 @@ function Sidebar() {
             {/* Tooltip */}
             {collapsed && tooltipVisible === index && (
               <div
-                className="absolute left-1/2 bottom-0 translate-x-[-50%] translate-y-full px-2 py-1 bg-gray-800 text-white text-sm rounded shadow-lg z-50 pointer-events-none whitespace-normal text-center max-w-[140px]
+                className="absolute left-1/2 bottom-0 translate-x-[-50%] translate-y-full px-2 py-1 bg-gray-800 text-white text-sm sm:text-xs rounded shadow-lg z-50 pointer-events-none whitespace-normal text-center max-w-[140px]
     "
               >
                 {item.label}

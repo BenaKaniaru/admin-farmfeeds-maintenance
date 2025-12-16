@@ -210,7 +210,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
   // ---------- UI ----------
   return (
     <div
-      className="flex-1 min-h-screen bg-gray-50 p-4 relative overflow-auto"
+      className="flex-1 min-h-screen bg-gray-50 p-3 sm:p-4 relative overflow-x-hidden"
       ref={inventoryRef}
     >
       <h2 className="font-bold text-2xl mb-4 text-gray-800">
@@ -218,7 +218,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
       </h2>
 
       {/* Search Bar */}
-      <div className="flex items-center bg-white shadow-md rounded-xl px-4 py-2 w-full max-w-5xl mx-auto mb-4">
+      <div className="flex items-center bg-white shadow-md rounded-xl px-3 sm:px-4 py-2 w-full max-w-5xl mx-auto mb-4">
         <Search className="text-gray-500 mr-2" size={20} />
         <input
           type="text"
@@ -231,7 +231,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
 
       {/* Machine Cards */}
       {filtered.length === 0 ? (
-        <div className="flex justify-center items-center text-gray-500 py-20">
+        <div className="flex justify-center items-center text-gray-500 py-5">
           No machines found.
         </div>
       ) : (
@@ -253,26 +253,10 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                   </p>
                   <p className="text-gray-500 text-sm">Code: {m.code}</p>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => openEdit(key, m)}
-                    className="flex items-center bg-yellow-400 text-white px-3 py-1 rounded-xl shadow"
-                  >
-                    <Edit2 size={16} className="mr-1" /> Edit
-                  </button>
-
-                  <button
-                    onClick={() => openDelete(key)}
-                    className="flex items-center bg-red-500 text-white px-3 py-1 rounded-xl shadow"
-                  >
-                    <Trash2 size={16} className="mr-1" /> Delete
-                  </button>
-                </div>
               </div>
 
               {/* Basic Info Grid */}
-              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700 mb-4">
                 <p>
                   <strong>Category:</strong> {m.category}
                 </p>
@@ -321,6 +305,21 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                   <strong>Year of Manufacture:</strong>{" "}
                   {m.manufactureYear || "—"}
                 </p>
+
+                <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3 mb-4">
+                  <button
+                    onClick={() => openEdit(key, m)}
+                    className="bg-blue-500 rounded-lg p-2 px-4 text-white cursor-pointer hover:bg-blue-400"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => openDelete(key)}
+                    className="bg-red-500 rounded-lg p-2 px-4 text-white cursor-pointer hover:bg-red-400"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
 
               {/* Expand Accessories Button */}
@@ -358,7 +357,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                             <p className="font-medium text-green-700">
                               {acc.name || acc.type}
                             </p>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 mt-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-700 mt-1">
                               {Object.entries(acc)
                                 .filter(([k]) => k !== "name" && k !== "type")
                                 .map(([k, v]) => (
@@ -380,7 +379,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
       )}
 
       {/* Form Modal */}
-      {/* Form Modal */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -400,7 +398,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
               exit={{ y: -50, opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               onSubmit={handleSubmit}
-              className="relative bg-white p-6 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto grid gap-4 grid-cols-1 md:grid-cols-2 mx-4 z-50 shadow-xl"
+              className="relative bg-white p-4 sm:p-6 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto grid gap-4 grid-cols-1 md:grid-cols-2 mx-2 sm:mx-4 z-50 shadow-xl"
             >
               <div className="col-span-full flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-gray-800">
@@ -419,7 +417,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                 </button>
               </div>
 
-              {/* Machine fields and accessories section remain unchanged */}
+              {/* Machine fields and accessories section */}
               {Object.keys(formData)
                 .filter((k) => k !== "accessories")
                 .map((field) => (
@@ -465,7 +463,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                   </div>
                 ))}
 
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   <button
                     type="button"
                     className="bg-blue-600 text-white px-3 py-1 rounded-xl"
@@ -522,27 +520,37 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
       <AnimatePresence>
         {deleteTarget && (
           <motion.div
-            key="delete-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute top-0 left-0 w-full h-full flex justify-center items-start z-50"
+            className="fixed inset-0 flex justify-center items-center z-50"
           >
-            <div className="absolute inset-0 backdrop-blur-md bg-white/30" />
-            <div className="relative bg-white p-6 rounded-2xl w-72 shadow-xl mt-10 z-50">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+
+            <motion.div
+              initial={{ y: -20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -20, opacity: 0, scale: 0.95 }}
+              className="relative bg-white p-6 rounded-2xl w-full max-w-sm mx-4 shadow-xl"
+            >
               <p className="font-bold mb-3 text-gray-800">
                 Delete this machine?
               </p>
               <div className="flex justify-end gap-3">
-                <button onClick={cancelDelete}>Cancel</button>
+                <button
+                  onClick={cancelDelete}
+                  className="px-3 py-1 text-gray-600 rounded-xl hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={confirmDelete}
-                  className="bg-red-600 text-white px-4 py-1 rounded-xl"
+                  className="bg-red-600 text-white px-4 py-1 rounded-xl hover:bg-red-700"
                 >
                   Delete
                 </button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -550,7 +558,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
       {/* Floating Add Button */}
       <motion.button
         onClick={openAdd}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg z-50 flex items-center justify-center"
+        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg z-50 flex items-center justify-center"
         aria-label="Add machine"
         initial={{ scale: 1 }}
         animate={{ scale: [1, 1.1, 1] }}
