@@ -10,11 +10,14 @@ function Topbar({ toggleSidebar }) {
 
   return (
     <div className="w-full bg-white shadow-sm px-6 h-16 flex items-center justify-between fixed top-0 left-0 z-30">
-      {/* LEFT SIDE: Hamburger on mobile + Logo */}
-      <div className="flex flex-col items-center ">
+      <div className="flex flex-col items-center -gap-1">
         {/* FARM FEEDS LOGO */}
-        <h1 className="text-2xl font-black text-red-600">FARM FEEDS</h1>
-        <h2 className="text-xl font-black text-blue-600">MAINTENANCE</h2>
+        <h1 className="text-xl sm:text-2xl md:text-2xl font-black -mb-1 text-red-600">
+          FARM FEEDS
+        </h1>
+        <h2 className="text-lg sm:text-xl md:text-xl font-black -mt-1 text-blue-600">
+          MAINTENANCE
+        </h2>
       </div>
 
       {/* RIGHT SIDE: Profile */}
