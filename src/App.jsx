@@ -13,7 +13,7 @@ import SparePartsInventory from "./Pages/SparePartsInventory";
 
 function App() {
   return (
-    <Router>
+    <div>
       <div className="flex w-full h-screen bg-gray-100 overflow-hidden">
         {/* Sidebar */}
         <Sidebar />
@@ -35,7 +35,7 @@ function App() {
           </main>
         </div>
       </div>
-    </Router>
+    </div>
   );
 }
 

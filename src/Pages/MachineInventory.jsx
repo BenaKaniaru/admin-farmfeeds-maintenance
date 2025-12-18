@@ -2,36 +2,24 @@ import { useEffect, useState, useRef } from "react";
 import { ref, onValue, push, remove, update } from "firebase/database";
 import { db } from "../services/firebase";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  Plus,
-  Edit2,
-  Trash2,
-  X,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Search, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function MachineInventory({ sidebarWidth = 256 }) {
   const [machines, setMachines] = useState({});
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(initialFormState());
-  const [editingMachine, setEditingMachine] = useState(null); // firebase key when editing
-  const [deleteTarget, setDeleteTarget] = useState(null); // firebase key to delete
-  const [expanded, setExpanded] = useState({}); // Track expanded state per machine
+  const [editingMachine, setEditingMachine] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [expanded, setExpanded] = useState({});
   const inventoryRef = useRef(null);
 
-  // Disable page scroll when modal open
   useEffect(() => {
     if (showForm || deleteTarget) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "auto";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
+    return () => (document.body.style.overflow = "auto");
   }, [showForm, deleteTarget]);
 
-  // Subscribe to Firebase machines
   useEffect(() => {
     const machinesRef = ref(db, "machines");
     return onValue(machinesRef, (snapshot) => {
@@ -39,7 +27,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
     });
   }, []);
 
-  // ---------- Helpers ----------
   function initialFormState() {
     return {
       name: "",
@@ -64,72 +51,57 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
   const labelFor = (field) =>
     field.replace(/([A-Z])/g, " $1").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  // ---------- CRUD handlers ----------
-  function openAdd() {
-    setEditingMachine(null);
+  const openAdd = () => {
     setFormData(initialFormState());
+    setEditingMachine(null);
     setShowForm(true);
-  }
+  };
 
-  function openEdit(key, machineObj) {
+  const openEdit = (key, machineObj) => {
     setEditingMachine(key);
-    // Ensure accessories array exists to avoid runtime errors
     setFormData({
       ...initialFormState(),
       ...machineObj,
       accessories: Array.isArray(machineObj?.accessories)
-        ? machineObj.accessories
+        ? machineObj.accessories.map((acc) => ({ ...acc })) // deep copy
         : [],
     });
     setShowForm(true);
-  }
+  };
 
-  function openDelete(key) {
-    setDeleteTarget(key);
-  }
-
-  function cancelDelete() {
-    setDeleteTarget(null);
-  }
-
-  async function confirmDelete() {
+  const openDelete = (key) => setDeleteTarget(key);
+  const cancelDelete = () => setDeleteTarget(null);
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await remove(ref(db, "machines/" + deleteTarget));
-    } catch (err) {
-      console.error("Delete error:", err);
     } finally {
       setDeleteTarget(null);
     }
-  }
+  };
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Basic validation: require name and code
     if (!formData.name || !formData.code) {
       alert("Please provide at least Name and Code.");
       return;
     }
-
     try {
-      if (editingMachine) {
+      if (editingMachine)
         await update(ref(db, "machines/" + editingMachine), formData);
-      } else {
-        await push(ref(db, "machines"), formData);
-      }
-    } catch (err) {
-      console.error("Save error:", err);
+      else await push(ref(db, "machines"), formData);
     } finally {
       setShowForm(false);
       setEditingMachine(null);
       setFormData(initialFormState());
     }
-  }
+  };
 
-  // ---------- Accessories helpers ----------
+  const handleChange = (e) =>
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
   const addAccessory = (type) => {
     let newAccessory = { type };
-
     if (type === "Motor") {
       newAccessory = {
         type,
@@ -147,9 +119,9 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
         thermalClass: "",
       };
     } else if (type === "Bearing") {
-      newAccessory = { type, bearingType: "", bearingCode: "" };
+      newAccessory = { type, bearingType: "", bearingCode: "", quantity: "" };
     } else if (type === "Belt") {
-      newAccessory = { type, beltType: "", beltSize: "" };
+      newAccessory = { type, beltType: "", beltSize: "", quantity: "" };
     } else if (type === "Gear Coupling") {
       newAccessory = {
         type,
@@ -168,7 +140,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
         recommendedLubricant: "",
       };
     }
-
     setFormData((prev) => ({
       ...prev,
       accessories: [...(prev.accessories || []), newAccessory],
@@ -183,9 +154,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
     });
   };
 
-  const handleChange = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
   const handleAccessoryChange = (index, field, value) => {
     setFormData((prev) => {
       const copy = [...(prev.accessories || [])];
@@ -194,7 +162,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
     });
   };
 
-  // ---------- Filtering ----------
   const filtered = Object.entries(machines).filter(([key, m]) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
@@ -207,7 +174,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
     );
   });
 
-  // ---------- UI ----------
   return (
     <div
       className="flex-1 min-h-screen bg-gray-50 p-3 sm:p-4 relative overflow-x-hidden"
@@ -217,7 +183,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
         Machine Inventory
       </h2>
 
-      {/* Search Bar */}
       <div className="flex items-center bg-white shadow-md rounded-xl px-3 sm:px-4 py-2 w-full max-w-5xl mx-auto mb-4">
         <Search className="text-gray-500 mr-2" size={20} />
         <input
@@ -229,7 +194,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
         />
       </div>
 
-      {/* Machine Cards */}
       {filtered.length === 0 ? (
         <div className="flex justify-center items-center text-gray-500 py-5">
           No machines found.
@@ -244,7 +208,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
               exit={{ opacity: 0 }}
               className="bg-white p-6 rounded-3xl shadow-md border border-gray-200 hover:shadow-lg transition"
             >
-              {/* Header */}
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="text-xl font-bold text-green-700">{m.name}</p>
@@ -255,7 +218,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                 </div>
               </div>
 
-              {/* Basic Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700 mb-4">
                 <p>
                   <strong>Category:</strong> {m.category}
@@ -309,21 +271,20 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                 <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3 mb-4">
                   <button
                     onClick={() => openEdit(key, m)}
-                    className="bg-blue-500 rounded-lg p-2 px-4 text-white cursor-pointer hover:bg-blue-400"
+                    className="bg-blue-500 rounded-lg p-2 px-4 text-white hover:bg-blue-400"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => openDelete(key)}
-                    className="bg-red-500 rounded-lg p-2 px-4 text-white cursor-pointer hover:bg-red-400"
+                    className="bg-red-500 rounded-lg p-2 px-4 text-white hover:bg-red-400"
                   >
                     Delete
                   </button>
                 </div>
               </div>
 
-              {/* Expand Accessories Button */}
-              {m.accessories && m.accessories.length > 0 && (
+              {m.accessories?.length > 0 && (
                 <div className="mt-3">
                   <button
                     onClick={() =>
@@ -388,10 +349,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
             exit={{ opacity: 0 }}
             className="fixed inset-0 flex justify-center items-center z-50"
           >
-            {/* Backdrop */}
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-
-            {/* Modal content with slide-down animation */}
             <motion.form
               initial={{ y: -50, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -417,7 +375,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                 </button>
               </div>
 
-              {/* Machine fields and accessories section */}
               {Object.keys(formData)
                 .filter((k) => k !== "accessories")
                 .map((field) => (
@@ -435,7 +392,7 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                   </div>
                 ))}
 
-              {/* Accessories section */}
+              {/* Accessories Section */}
               <div className="col-span-full">
                 <h4 className="font-bold text-gray-800 mb-2">Accessories</h4>
                 {formData.accessories?.length === 0 && (
@@ -443,14 +400,14 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                     No accessories added yet.
                   </div>
                 )}
-                {formData.accessories?.map((acc, index) => (
+                {formData.accessories?.map((acc, idx) => (
                   <div
-                    key={index}
+                    key={idx}
                     className="border p-3 rounded-xl mb-2 relative grid gap-2 grid-cols-1 md:grid-cols-2"
                   >
                     <button
                       type="button"
-                      onClick={() => removeAccessory(index)}
+                      onClick={() => removeAccessory(idx)}
                       className="absolute top-2 right-2 text-red-500"
                       aria-label="Remove accessory"
                     >
@@ -459,10 +416,24 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
                     <div className="col-span-full font-semibold text-gray-800 mb-1">
                       {acc.type} Specifications
                     </div>
-                    {/* Accessory fields mapping stays the same */}
+                    {Object.keys(acc)
+                      .filter((k) => k !== "type")
+                      .map((field) => (
+                        <div key={field} className="flex flex-col">
+                          <label className="text-gray-700 font-semibold text-sm mb-1">
+                            {labelFor(field)}
+                          </label>
+                          <input
+                            value={acc[field] || ""}
+                            onChange={(e) =>
+                              handleAccessoryChange(idx, field, e.target.value)
+                            }
+                            className="border border-gray-300 rounded-xl px-2 py-1 text-sm"
+                          />
+                        </div>
+                      ))}
                   </div>
                 ))}
-
                 <div className="flex flex-wrap gap-2 mt-2">
                   <button
                     type="button"
@@ -526,7 +497,6 @@ export default function MachineInventory({ sidebarWidth = 256 }) {
             className="fixed inset-0 flex justify-center items-center z-50"
           >
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-
             <motion.div
               initial={{ y: -20, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
