@@ -29,7 +29,7 @@ function App() {
             <Routes>
               <Route
                 path="/"
-                element={<Navigate to="/maintenanceanlytics" replace />}
+                element={<Navigate to="/maintenanceanalytics" replace />}
               />
               <Route
                 path="/maintenanceanalytics"
