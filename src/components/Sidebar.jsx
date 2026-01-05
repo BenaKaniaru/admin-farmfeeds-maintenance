@@ -34,7 +34,16 @@ function Sidebar() {
   const toggleSidebar = () => setCollapsed(!collapsed);
 
   const menu = [
-    { label: "Maintenance History", path: "/maintenancehistory", icon: <MdBuild size={20} /> },
+    {
+      label: "Analytics",
+      path: "/maintenanceanalytics",
+      icon: <MdStorage size={20} />,
+    },
+    {
+      label: "Maintenance History",
+      path: "/maintenancehistory",
+      icon: <MdBuild size={20} />,
+    },
     {
       label: "Machine Inventory",
       path: "/machineinventory",
@@ -49,8 +58,8 @@ function Sidebar() {
     {
       label: "Spare Parts Inventory",
       path: "/spareparts",
-      icon: <FaCog size= {20} />,
-    }
+      icon: <FaCog size={20} />,
+    },
   ];
 
   const handleMouseEnter = (index) => collapsed && setTooltipVisible(index);

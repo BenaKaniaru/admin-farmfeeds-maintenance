@@ -1,6 +1,7 @@
 // MaintenanceSchedule.jsx
 import React, { useEffect, useState } from "react";
 import { ref, onValue, push, update, remove } from "firebase/database";
+import { useSearchParams } from "react-router-dom";
 import { db } from "../services/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -91,15 +92,19 @@ function daysUntil(dateIso) {
   return diff;
 }
 
+
 function computeStatus(task) {
   const next = task?.nextServiceDate || null;
-  if (!next) return "No Date";
+  if (!next) return "nodate";
+
   const diff = daysUntil(next);
-  if (diff < 0) return "Overdue";
-  if (diff === 0) return "Due Today";
-  if (diff <= 3) return "Upcoming";
-  return "Pending";
+  if (diff < 0) return "overdue";
+  if (diff === 0) return "ongoing"; // internal key
+  if (diff <= 3) return "upcoming";
+  return "pending";
 }
+
+
 
 function mapTasksToEvents(tasks, machine, category) {
   return Object.entries(tasks)
@@ -133,6 +138,22 @@ function SectionHeader({ title }) {
   );
 }
 
+function statusLabel(status) {
+  switch (status) {
+    case "overdue":
+      return "Overdue";
+    case "ongoing":
+      return "Due Today";
+    case "upcoming":
+      return "Upcoming";
+    case "pending":
+      return "Pending";
+    default:
+      return "—";
+  }
+}
+
+
 /* Task Card */
 function TaskCard({
   task,
@@ -151,7 +172,7 @@ function TaskCard({
   const badgeClass =
     status === "Overdue"
       ? "bg-red-100 text-red-700"
-      : status === "Due Today"
+      : status === "ongoing"
       ? "bg-yellow-100 text-yellow-700"
       : status === "Upcoming"
       ? "bg-orange-100 text-orange-700"
@@ -175,8 +196,9 @@ function TaskCard({
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeClass}`}
             >
-              {status}
+              {statusLabel(status)}
             </span>
+
             <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
               {task.priority || "Medium"}
             </span>
@@ -206,9 +228,7 @@ function TaskCard({
       </div>
 
       {/* Info Grid */}
-      <div
-        className="mt-2 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-2 wrap-break-word"
-      >
+      <div className="mt-2 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-2 wrap-break-word">
         <div>
           <strong className="text-gray-700">Machine:</strong>{" "}
           <span className="text-gray-600">
@@ -324,12 +344,14 @@ export default function MaintenanceSchedule() {
   const [calendarCategory, setCalendarCategory] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
+  const [searchParams] = useSearchParams();
+  const filterStatus = searchParams.get("status"); // e.g. overdue, upcoming
+
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
 
   useEffect(() => {
     const tasksRef = ref(db, "maintenanceSchedule");
@@ -420,8 +442,6 @@ export default function MaintenanceSchedule() {
     }
   }
 
-
-
   async function doComplete(key, task) {
     const today = todayISO();
     const next = computeNextFrom(today, task.category || "Weekly");
@@ -436,7 +456,6 @@ export default function MaintenanceSchedule() {
       alert("Failed to mark complete.");
     }
   }
-
 
   /* -------------------------
      Add / Edit helpers
@@ -460,13 +479,23 @@ export default function MaintenanceSchedule() {
   ------------------------- */
   const flat = Object.entries(tasks).map(([k, v]) => ({ key: k, ...v }));
   const filtered = flat.filter((t) => {
+    /* 🔍 text search */
     const q = query.trim().toLowerCase();
-    if (!q) return true;
-    const hay = `${t.taskName || t.name || ""} ${t.description || ""} ${
-      t.machine || ""
-    } ${t.location || ""} ${t.assignedTo || ""}`.toLowerCase();
-    return hay.includes(q);
+    if (q) {
+      const hay = `${t.taskName || t.name || ""} ${t.description || ""} ${
+        t.machine || ""
+      } ${t.location || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+
+    /* 🎯 status filter from analytics */
+    if (filterStatus) {
+      return computeStatus(t) === filterStatus;
+    }
+
+    return true;
   });
+
 
   const grouped = CATEGORIES.reduce((acc, c) => {
     acc[c] = filtered.filter((t) => (t.category || "Weekly") === c);
@@ -530,13 +559,25 @@ export default function MaintenanceSchedule() {
                   ? "dayGridMonth"
                   : "dayGridMonth,timeGridWeek,timeGridDay",
               }}
-              events={mapTasksToEvents(tasks, calendarMachine, calendarCategory)}
+              
+              events={mapTasksToEvents(
+                filtered.reduce((acc, t) => {
+                  acc[t.key] = t;
+                  return acc;
+                }, {}),
+                calendarMachine,
+                calendarCategory
+              )}
+
               eventClick={(info) => openEditTask(info.event.id)}
               eventDrop={async (info) => {
                 try {
-                  await update(ref(db, `maintenanceSchedule/${info.event.id}`), {
-                    nextServiceDate: info.event.startStr,
-                  });
+                  await update(
+                    ref(db, `maintenanceSchedule/${info.event.id}`),
+                    {
+                      nextServiceDate: info.event.startStr,
+                    }
+                  );
                 } catch {
                   info.revert();
                   alert("Failed to reschedule task");
@@ -563,7 +604,6 @@ export default function MaintenanceSchedule() {
       </div>
     );
   }
-
 
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen">

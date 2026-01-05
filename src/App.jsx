@@ -10,6 +10,7 @@ import MaintenanceHistory from "./Pages/MaintenanceHistory";
 import MachineInventory from "./Pages/MachineInventory";
 import WorkSchedule from "./Pages/WorkSchedule";
 import SparePartsInventory from "./Pages/SparePartsInventory";
+import MaintenanceAnalytics from "./Pages/MaintenanceAnalytics";
 
 function App() {
   return (
@@ -26,11 +27,21 @@ function App() {
           {/* Scrollable Page Content */}
           <main className="flex-1 mt-16 p-6 overflow-y-auto">
             <Routes>
-              <Route path="/" element={<Navigate to="/maintenancehistory" replace />} />
-              <Route path="/maintenancehistory" element={<MaintenanceHistory />} />
+              <Route
+                path="/"
+                element={<Navigate to="/maintenanceanlytics" replace />}
+              />
+              <Route
+                path="/maintenanceanalytics"
+                element={<MaintenanceAnalytics />}
+              />
+              <Route
+                path="/maintenancehistory"
+                element={<MaintenanceHistory />}
+              />
               <Route path="/machineinventory" element={<MachineInventory />} />
               <Route path="/workschedule" element={<WorkSchedule />} />
-              <Route path="/spareparts" element={<SparePartsInventory/>} />
+              <Route path="/spareparts" element={<SparePartsInventory />} />
             </Routes>
           </main>
         </div>
