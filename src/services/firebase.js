@@ -12,7 +12,7 @@ const firebaseConfig = {
   storageBucket: "farm-feeds-maintenance.appspot.com", // fixed
   messagingSenderId: "297888806058",
   appId: "1:297888806058:web:c4ac4c10585519245c8cd3",
-  // measurementId is optional, remove if not using Analytics
+ 
 };
 
 // ------------------ Initialize Firebase ------------------

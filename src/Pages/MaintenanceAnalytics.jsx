@@ -51,19 +51,20 @@ export default function MaintenanceAnalytics() {
 
   useEffect(() => {
     const refTasks = ref(db, "maintenanceSchedule");
+    const refHistory = ref(db, "maintenanceHistory");
 
-    return onValue(refTasks, (snap) => {
+    // Scheduled maintenance listener
+    const unsubscribeTasks = onValue(refTasks, (snap) => {
       const data = snap.val() || {};
       const tasks = Object.values(data);
 
-     const counts = {
-       total: tasks.length,
-       completed: 0,
-       ongoing: 0,
-       upcoming: 0,
-       overdue: 0,
-     };
-
+      const counts = {
+        total: tasks.length,
+        completed: 0, // will be filled by history listener
+        ongoing: 0,
+        upcoming: 0,
+        overdue: 0,
+      };
 
       tasks.forEach((task) => {
         const status = computeStatus(task);
@@ -72,9 +73,29 @@ export default function MaintenanceAnalytics() {
         }
       });
 
-      setStats(counts);
+      setStats((prev) => ({
+        ...counts,
+        completed: prev.completed, // keep completed from history
+      }));
     });
+
+    // Maintenance history listener (COMPLETED)
+    const unsubscribeHistory = onValue(refHistory, (snap) => {
+      const historyData = snap.val() || {};
+      const historyRecords = Object.values(historyData);
+
+      setStats((prev) => ({
+        ...prev,
+        completed: historyRecords.length,
+      }));
+    });
+
+    return () => {
+      unsubscribeTasks();
+      unsubscribeHistory();
+    };
   }, []);
+
 
   const Card = ({ title, value, subtitle, icon: Icon, color, onClick }) => (
     <div
@@ -101,7 +122,17 @@ export default function MaintenanceAnalytics() {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-2 py-8">
-          {/* Total */}
+          {/* Tota Completed Maintenance Tasks */}
+          <Card
+            title="Completed Maintenance Activities"
+            value={stats.completed}
+            subtitle="Record of major maintenance tasks completed"
+            icon={FaCircleCheck}
+            color="text-green-600"
+            onClick={() => navigate("/maintenancehistory")}
+          />
+
+          {/* Total Scheduled Maintenance Tasks */}
           <Card
             title="Total Scheduled Maintenance Activities"
             value={stats.total}
@@ -110,16 +141,6 @@ export default function MaintenanceAnalytics() {
             color="text-blue-600"
             onClick={() => navigate("/workschedule")}
           />
-
-          {/* Completed 
-          <Card
-            title="Completed"
-            value={stats.completed}
-            subtitle="Successfully serviced tasks"
-            icon={FaCircleCheck}
-            color="text-green-600"
-            onClick={() => navigate("/workschedule?status=completed")}
-          /> */}
 
           {/* Ongoing / Due Today */}
           <Card

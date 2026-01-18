@@ -343,6 +343,8 @@ export default function MaintenanceSchedule() {
   const [calendarMachine, setCalendarMachine] = useState("");
   const [calendarCategory, setCalendarCategory] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [selectedFrequency, setSelectedFrequency] = useState("all");
+
 
   const [searchParams] = useSearchParams();
   const filterStatus = searchParams.get("status"); // e.g. overdue, upcoming
@@ -490,12 +492,16 @@ export default function MaintenanceSchedule() {
 
     /* 🎯 status filter from analytics */
     if (filterStatus) {
-      return computeStatus(t) === filterStatus;
+      if (computeStatus(t) !== filterStatus) return false;
+    }
+
+    /* 🗓️ frequency filter */
+    if (selectedFrequency !== "all") {
+      if ((t.category || "Weekly") !== selectedFrequency) return false;
     }
 
     return true;
   });
-
 
   const grouped = CATEGORIES.reduce((acc, c) => {
     acc[c] = filtered.filter((t) => (t.category || "Weekly") === c);
@@ -619,15 +625,32 @@ export default function MaintenanceSchedule() {
             <Calendar size={16} /> Calendar
           </button>
         </div>
+        <div className="flex flex-row gap-4 mb-6 items-stretch md:items-center">
+          <div className="flex-1">
+            <Search className="absolute left-4 top-3 text-gray-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search tasks, machine, location or assignee..."
+              className="pl-8 pr-4 py-3 border rounded-xl w-full text-sm shadow-sm"
+            />
+          </div>
 
-        <div className="mb-4 relative">
-          <Search className="absolute left-4 top-3 text-gray-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tasks, machine, location or assignee..."
-            className="pl-12 pr-4 py-3 border rounded-xl w-full text-sm shadow-sm"
-          />
+          {/* Frequency Filter */}
+          <div className="flex flex-wrap pl-4 items-center  p-1">
+            <select
+              value={selectedFrequency}
+              onChange={(e) => setSelectedFrequency(e.target.value)}
+              className="py-3 border rounded-xl w-full text-sm shadow-sm"
+            >
+              <option value="all">All</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {CATEGORIES.map((cat) => (
