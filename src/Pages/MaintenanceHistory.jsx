@@ -60,7 +60,10 @@ function MaintenanceHistory() {
   };
 
   const saveOrder = () => {
-    if (!form.title.trim() || !form.machine.trim()) return;
+   if (!form.title.trim() || !form.machine.trim()) {
+  alert("Title and Machine are required");
+  return;
+  }
 
     const payload = {
       ...form,
